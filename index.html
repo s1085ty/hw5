@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>奇幻島嶼探索與放鬆隨身聽</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#efe3cc;--panel:#fbf3e2;--ink:#3a2a1e;--wood:#8b6b4a;--lake:#7fb5c4;--grass:#a8c686;--mute:#7a6652;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a2119;--panel:#3a2e23;--ink:#f3e6cf;--wood:#c19a6b;--mute:#c9b595}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Zen Maru Gothic","PingFang TC","Microsoft JhengHei",sans-serif;display:grid;grid-template-columns:1fr 310px;gap:12px;padding:12px}
+#stage{position:relative;align-self:center;aspect-ratio:16/9;width:100%;border:4px solid var(--ink);border-radius:18px;overflow:hidden;background:#cfe6a5}
+canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas.grab{cursor:grabbing}
+#hud{position:absolute;top:10px;left:10px;display:flex;gap:8px}
+.pill,button{font:inherit;color:#3a2a1e;background:#fff6dc;border:3px solid #3a2a1e;border-radius:999px;padding:4px 12px;font-weight:700}
+button{cursor:pointer;box-shadow:0 3px 0 #3a2a1e}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #3a2a1e}
+button:focus-visible,input:focus-visible{outline:3px solid #e0752f;outline-offset:2px}
+#mapbtn{position:absolute;top:10px;right:10px}
+#island{position:absolute;bottom:10px;left:10px}
+#bubble{position:absolute;display:none;max-width:220px;background:#fff;color:#3a2a1e;border:3px solid #3a2a1e;border-radius:14px;padding:8px 12px;font-weight:700;pointer-events:none}
+#toast{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#3a2a1e;color:#fff6dc;border-radius:999px;padding:6px 16px;opacity:0;transition:opacity .3s;pointer-events:none}
+aside{display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:calc(100vh - 24px)}
+section{background:var(--panel);border:3px solid var(--ink);border-radius:16px;padding:10px 12px}
+h2{font-size:15px;margin:0 0 6px}
+#time{font-size:44px;font-weight:700;text-align:center;letter-spacing:2px}
+.row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.quest{display:flex;justify-content:space-between;font-size:14px;padding:2px 0}
+.quest.done{text-decoration:line-through;color:var(--mute)}
+.snd{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:14px}
+.snd button{padding:2px 8px;min-width:84px;box-shadow:none}
+.snd button.on{background:#a8c686}
+.snd input{flex:1;accent-color:#8b6b4a}
+#todos{list-style:none;margin:6px 0 0;padding:0;font-size:14px}
+#todos li{display:flex;gap:6px;align-items:center;padding:2px 0;cursor:pointer}
+#todos li.done span{text-decoration:line-through;color:var(--mute)}
+#addrow{display:flex;gap:6px}
+#addrow input{flex:1;min-width:0;border:3px solid var(--ink);border-radius:999px;padding:3px 10px;font:inherit;background:#fffaf0;color:#3a2a1e}
+#modal{position:absolute;inset:0;display:none;place-items:center;background:rgba(58,42,30,.55)}
+#modal .scroll{background:#ecd9a8;border:5px solid #5a3f25;border-radius:10px;padding:18px 24px;text-align:center}
+#modal .row{margin-top:12px}
+@media (max-width:900px){body{grid-template-columns:1fr}aside{max-height:none}}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+:root{--bg:#b9c98a;--panel:#fbf3d9;--ink:#5a4128;--wood:#a8744a;--mute:#9a8362}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2f3a24;--panel:#3d4630;--ink:#f3ead0;--mute:#c9c3a0}}
+body{background:var(--bg)}
+#stage{border:4px solid #8b6b4a;border-radius:24px;background:#bccf82;box-shadow:0 6px 0 rgba(90,65,40,.25)}
+section{background:var(--panel);border:2px solid #8b6b4a;border-radius:20px;box-shadow:0 3px 0 rgba(90,65,40,.2)}
+.pill{background:#fbf3d9;border:2px solid #8b6b4a;color:#5a4128;box-shadow:inset 0 0 0 3px #f1e5bf}
+button{background:#fbf3d9;color:#5a4128;border:2px solid #8b6b4a;border-radius:16px;box-shadow:0 3px 0 #c9b48a}
+button:active{box-shadow:0 1px 0 #c9b48a}
+#start,.snd button.on{background:#a8c97a}
+#mapbtn{background:#c9a06a;color:#fff8e6;border-radius:14px 22px 22px 14px;padding:6px 16px}
+#bubble{border:2px solid #8b6b4a;color:#5a4128;background:#fffaf0}
+#toast{background:#6e4f33}
+#modal .scroll{background:#f3e3b5;border:4px solid #a8744a;border-radius:14px 14px 22px 22px}
+#addrow input{border:2px solid #8b6b4a;border-radius:14px}
+canvas{background:#bccf82}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c" width="1280" height="720"></canvas>
+  <div id="hud"><span class="pill">⭐ <b id="stars">0</b></span><span class="pill">🐟 <b id="fish">0</b></span></div>
+  <button id="mapbtn">🗺️ 航海地圖</button>
+  <span id="island" class="pill"></span>
+  <div id="bubble"></div><div id="toast"></div>
+  <div id="modal"><div class="scroll"><b>要去哪裡呢？</b><div class="row">
+    <button data-go="home">🏠 家園本島</button><button data-go="snow">❄️ 雪國企鵝島</button><button data-go="forest">🌲 森林兔子島</button></div>
+    <div class="row"><button id="close">留在這裡</button></div></div></div>
+</div>
+<aside>
+  <section><h2>⏳ 專注計時</h2><div id="time">25:00</div>
+    <div class="row"><button id="start">開始</button><button id="reset">重置</button></div></section>
+  <section><h2>🎁 每日任務</h2><div id="quests"></div></section>
+  <section><h2>📝 待辦事項</h2>
+    <form id="addrow" onsubmit="return false"><input id="newtodo" placeholder="新增待辦事項" maxlength="40"><button id="add" type="button">新增</button></form>
+    <ul id="todos"></ul></section>
+  <section><h2>🎧 放鬆音效</h2><div id="snds"></div></section>
+</aside>
+<script>
+const $=id=>document.getElementById(id), cv=$('c'), g=cv.getContext('2d');
+const INK='#3a2a1e', W=1280, H=720;
+let island='home', lightOn=true, stars=0, fish=0, t=0;
+const av={x:640,y:560,mode:'idle',drag:false,dx:0,dy:0,moved:0};
+const q={focus:{n:'專注滿 25 分鐘',c:0,m:1,s:30,f:5},fish:{n:'成功釣魚 3 次',c:0,m:3,s:20,f:3},todo:{n:'完成 2 個待辦事項',c:0,m:2,s:15,f:2}};
+let fishState={wait:0,bite:0};
+const NAMES={home:'🏠 家園本島',snow:'❄️ 雪國企鵝島',forest:'🌲 森林兔子島'};
+const TALK={snow:['🐧 今天的雪剛剛好，適合慢慢走。','🐧 要不要來杯熱可可？','🐧 魚乾很好吃，謝謝你！'],forest:['🐰 森林的風今天很溫柔。','🐰 蘿蔔放久會變甜喔。','🐰 累了就在樹下躺一會兒吧。']};
+const NPCS={snow:[{e:'🐧',x:420,y:470},{e:'🐧',x:860,y:520}],forest:[{e:'🐰',x:380,y:500},{e:'🐰',x:900,y:460}]};
+
+/* ---------- UI helpers ---------- */
+function toast(s){const e=$('toast');e.textContent=s;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,2200)}
+function hud(){$('stars').textContent=stars;$('fish').textContent=fish;$('island').textContent=NAMES[island];$('quests').innerHTML=Object.values(q).map(o=>`<div class="quest ${o.c>=o.m?'done':''}"><span>${o.n}</span><span>${Math.min(o.c,o.m)}/${o.m}</span></div>`).join('')}
+function prog(k){const o=q[k];if(o.c>=o.m)return;o.c++;if(o.c>=o.m){stars+=o.s;fish+=o.f;toast(`任務完成：${o.n}！⭐+${o.s} 🐟+${o.f}`);chime()}hud()}
+function say(txt,x,y){const b=$('bubble');b.textContent=txt;b.style.display='block';b.style.left=Math.min(x/W*100,78)+'%';b.style.top=Math.max(y/H*100-16,2)+'%';clearTimeout(say.h);say.h=setTimeout(()=>b.style.display='none',3000)}
+function setIsland(k){island=k;lightOn=true;av.mode='idle';av.x=640;av.y=560;parts.length=0;$('modal').style.display='none';hud();toast('抵達 '+NAMES[k])}
+$('mapbtn').onclick=()=>$('modal').style.display='grid';$('close').onclick=()=>$('modal').style.display='none';
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setIsland(b.dataset.go));
+
+/* ---------- Audio ---------- */
+let ac,master,noiseBuf;
+function ctx(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.connect(ac.destination);
+  noiseBuf=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  if(ac.state==='suspended')ac.resume();return ac}
+function noise(){const s=ac.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.start();return s}
+function chime(){try{ctx();[784,988,1319].forEach((f,i)=>{const o=ac.createOscillator(),v=ac.createGain();o.frequency.value=f;o.type='sine';v.gain.setValueAtTime(0,ac.currentTime+i*.1);v.gain.linearRampToValueAtTime(.15,ac.currentTime+i*.1+.02);v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+i*.1+.5);o.connect(v);v.connect(ac.destination);o.start(ac.currentTime+i*.1);o.stop(ac.currentTime+i*.1+.6)})}catch(e){}}
+const SND={
+ rain:{n:'🌧️ 雨聲',v:.5,on:false,build(out){const s=noise(),hp=ac.createBiquadFilter(),lp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=800;lp.type='lowpass';lp.frequency.value=7000;s.connect(hp);hp.connect(lp);lp.connect(out);return()=>s.stop()}},
+ ocean:{n:'🌊 海浪聲',v:.5,on:false,build(out){const s=noise(),lp=ac.createBiquadFilter(),sw=ac.createGain(),l=ac.createOscillator(),lg=ac.createGain();lp.type='lowpass';lp.frequency.value=500;sw.gain.value=.5;l.frequency.value=.11;lg.gain.value=.45;l.connect(lg);lg.connect(sw.gain);s.connect(lp);lp.connect(sw);sw.connect(out);l.start();return()=>{s.stop();l.stop()}}},
+ fire:{n:'🪵 營火聲',v:.5,on:false,build(out){const s=noise(),lp=ac.createBiquadFilter(),b=ac.createGain();lp.type='lowpass';lp.frequency.value=300;b.gain.value=.4;s.connect(lp);lp.connect(b);b.connect(out);
+   const h=setInterval(()=>{const c=ac.createBufferSource();c.buffer=noiseBuf;const f=ac.createBiquadFilter(),v=ac.createGain();f.type='bandpass';f.frequency.value=1500+Math.random()*3000;v.gain.setValueAtTime(.5,ac.currentTime);v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.05);c.connect(f);f.connect(v);v.connect(out);c.start(0,Math.random());c.stop(ac.currentTime+.06)},220);
+   return()=>{s.stop();clearInterval(h)}}},
+ lofi:{n:'🎵 Lofi 旋律',v:.5,on:false,build(out){const sc=[261.6,293.7,329.6,392,440,523.3,392,329.6],ch=[[261.6,329.6,392],[220,261.6,329.6],[174.6,220,261.6],[196,246.9,293.7]];let i=0;
+   const play=(f,d,vol)=>{const o=ac.createOscillator(),v=ac.createGain();o.type='sine';o.frequency.value=f;v.gain.setValueAtTime(0,ac.currentTime);v.gain.linearRampToValueAtTime(vol,ac.currentTime+.05);v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(v);v.connect(out);o.start();o.stop(ac.currentTime+d+.1)};
+   const h=setInterval(()=>{play(sc[Math.floor(Math.random()*sc.length)]*(Math.random()<.3?2:1),1.6,.18);if(i%4===0)ch[(i/4)%4].forEach(f=>play(f/2,3.2,.1));i++},800);return()=>clearInterval(h)}}};
+Object.entries(SND).forEach(([k,s])=>{const d=document.createElement('div');d.className='snd';d.innerHTML=`<button aria-pressed="false">${s.n}</button><input type="range" min="0" max="1" step=".01" value="${s.v}" aria-label="${s.n}音量">`;$('snds').appendChild(d);
+  const btn=d.children[0],sl=d.children[1];
+  btn.onclick=()=>{ctx();s.on=!s.on;btn.classList.toggle('on',s.on);btn.setAttribute('aria-pressed',s.on);
+    if(s.on){s.gain
